@@ -76,7 +76,7 @@ class AuthController extends Controller
         }
 
         // Generar token
-        $token = $this->generarToken($usuarioDb->usuId ?? $usuarioDb->id, $sede);
+        $token = $this->generarToken($usuarioDb->usuId, $sede);
 
         return response()->json([
             'success' => true,
@@ -85,8 +85,8 @@ class AuthController extends Controller
             'expires_in' => 3600 * 24, // 24 horas
             'sede' => $sede,
             'usuario' => [
-                'id' => $usuarioDb->usuId ?? $usuarioDb->id,
-                'nombre' => $usuarioDb->usuNombre ?? $usuarioDb->nombre,
+                'id' => $usuarioDb->usuId,
+                'nombre' => $usuarioDb->usuNombre,
                 'usuario' => $usuarioDb->usuLogin,
             ],
         ]);
