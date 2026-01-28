@@ -53,10 +53,9 @@ class AuthController extends Controller
         // Cambiar a la BD de la sede
         DatabaseSelector::setConnection($sede);
 
-        // Buscar usuario en la BD de la sede
+        // Buscar usuario en la BD de la sede (tabla usuario con campos usuLogin y usuClave)
         $usuarioDb = \DB::table('usuario')
-            ->where('usuario', $usuario)
-            ->orWhere('email', $usuario)
+            ->where('usuLogin', $usuario)
             ->first();
 
         if (!$usuarioDb) {
@@ -66,9 +65,8 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Verificar contraseña
-        // Ajusta esto según cómo guardes las contraseñas en tu BD
-        $passwordValida = $this->verificarPassword($password, $usuarioDb->password ?? $usuarioDb->clave);
+        // Verificar contraseña (campo usuClave)
+        $passwordValida = $this->verificarPassword($password, $usuarioDb->usuClave);
 
         if (!$passwordValida) {
             return response()->json([
@@ -78,7 +76,7 @@ class AuthController extends Controller
         }
 
         // Generar token
-        $token = $this->generarToken($usuarioDb->id, $sede);
+        $token = $this->generarToken($usuarioDb->usuId ?? $usuarioDb->id, $sede);
 
         return response()->json([
             'success' => true,
@@ -87,9 +85,9 @@ class AuthController extends Controller
             'expires_in' => 3600 * 24, // 24 horas
             'sede' => $sede,
             'usuario' => [
-                'id' => $usuarioDb->id,
-                'nombre' => $usuarioDb->nombre ?? $usuarioDb->nombres,
-                'usuario' => $usuarioDb->usuario,
+                'id' => $usuarioDb->usuId ?? $usuarioDb->id,
+                'nombre' => $usuarioDb->usuNombre ?? $usuarioDb->nombre,
+                'usuario' => $usuarioDb->usuLogin,
             ],
         ]);
     }
