@@ -129,11 +129,24 @@ class SyncService
                     throw new \Exception("registro_id requerido para operación UPDATE");
                 }
                 
-                Log::info("Ejecutando UPDATE", ['tabla' => $tabla, 'id' => $registro_id]);
-                $affected = DB::table($tabla)
-                    ->where($primaryKey, $registro_id)
-                    ->update($datos);
-                Log::info("UPDATE completado", ['affected_rows' => $affected]);
+                // Verificar si el registro existe (UPSERT logic)
+                $existe = DB::table($tabla)->where($primaryKey, $registro_id)->exists();
+                
+                if ($existe) {
+                    Log::info("Ejecutando UPDATE - registro existe", ['tabla' => $tabla, 'id' => $registro_id]);
+                    $affected = DB::table($tabla)
+                        ->where($primaryKey, $registro_id)
+                        ->update($datos);
+                    Log::info("UPDATE completado", ['affected_rows' => $affected]);
+                } else {
+                    Log::info("Registro no existe, ejecutando INSERT en su lugar", ['tabla' => $tabla, 'id' => $registro_id]);
+                    // Asegurar que el ID esté en los datos
+                    if (!isset($datos[$primaryKey])) {
+                        $datos[$primaryKey] = $registro_id;
+                    }
+                    DB::table($tabla)->insert($datos);
+                    Log::info("INSERT completado exitosamente");
+                }
                 break;
 
             case 'DELETE':
