@@ -76,7 +76,7 @@ class AuthController extends Controller
         }
 
         // Obtener ID del usuario (intentar diferentes nombres de campo)
-        $usuarioId = $usuarioDb->usuId ?? $usuarioDb->id ?? $usuarioDb->IdUsuario ?? $usuarioDb->usuario_id ?? null;
+        $usuarioId = $usuarioDb->idUsuario ?? $usuarioDb->usuId ?? $usuarioDb->id ?? $usuarioDb->IdUsuario ?? $usuarioDb->usuario_id ?? null;
         $usuarioNombre = $usuarioDb->usuNombre ?? $usuarioDb->nombre ?? $usuarioDb->Nombre ?? $usuarioDb->nombres ?? 'Usuario';
 
         // Generar token
