@@ -49,7 +49,7 @@ class SyncController extends Controller
             $syncService = new SyncService($sede);
 
             // Verificar actualizaciones
-            $updates = $syncService->checkUpdates($sede, $tabla, $ultimoId);
+            $updates = $syncService->verificarActualizaciones([$tabla => $ultimoId]);
 
             return response()->json([
                 'success' => true,
@@ -96,7 +96,7 @@ class SyncController extends Controller
         try {
             // Subir cambios
             $syncService = new SyncService($sede);
-            $resultado = $syncService->upload($sede, $cambios);
+            $resultado = $syncService->procesarUpload($cambios);
 
             return response()->json([
                 'success' => true,
@@ -145,7 +145,8 @@ class SyncController extends Controller
         try {
             // Descargar cambios
             $syncService = new SyncService($sede);
-            $cambios = $syncService->download($sede, $tablas, $desdeFecha);
+            $ultimosIds = is_array($tablas) ? array_fill_keys($tablas, 0) : [];
+            $cambios = $syncService->obtenerCambiosParaDownload($ultimosIds);
 
             return response()->json([
                 'success' => true,
@@ -171,7 +172,7 @@ class SyncController extends Controller
     {
         try {
             $syncService = new SyncService($sede);
-            $status = $syncService->getStatus($sede);
+            $status = $syncService->obtenerEstado();
 
             return response()->json([
                 'success' => true,
