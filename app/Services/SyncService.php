@@ -185,11 +185,11 @@ class SyncService
             'historia' => 'idhistoria',
             'hc' => 'id_hc',
             'agenda' => 'idagenda',
-            'historia_cups' => 'idHistoriaCups',
-            'historia_diagnostico' => 'idHistoriaDiagnostico',
-            'historia_medicamento' => 'idHistoriaMedicamento',
-            'historia_remision' => 'idHistoriaRemision',
-            'hc_complementaria' => 'idHcComplementaria',
+            'historia_cups' => 'id_historia_cups',
+            'historia_diagnostico' => 'id_historia_diagnostico',
+            'historia_medicamento' => 'id_historia_medicamento',
+            'historia_remision' => 'id_historia_remision',
+            'hc_complementaria' => 'id_hc_complementaria',
             'empresa' => 'idEmpresa',
             'contrato' => 'idContrato',
             'cups' => 'idCups',
@@ -201,72 +201,102 @@ class SyncService
 
     /**
      * Obtener cambios nuevos del servidor para descargar a local
+     * Usa sync_log para detectar cambios en lugar de buscar en todas las tablas
      */
     public function obtenerCambiosParaDownload(array $ultimos_ids)
     {
-        $nuevos_registros = [];
-        $tablas = config('sync.tablas_sincronizadas', []);
+        $cambios = [];
 
         Log::info("Iniciando obtenerCambiosParaDownload", [
-            'tablas_configuradas' => count($tablas),
             'ultimos_ids' => $ultimos_ids
         ]);
 
-        foreach ($tablas as $tabla) {
-            try {
-                $ultimo_id = $ultimos_ids[$tabla] ?? 0;
-                $primaryKey = $this->getPrimaryKeyForTable($tabla);
-                
-                // Verificar que la tabla existe
-                $tableExists = DB::getSchemaBuilder()->hasTable($tabla);
-                if (!$tableExists) {
-                    Log::warning("Tabla no existe, omitiendo", ['tabla' => $tabla]);
-                    continue;
-                }
-                
-                // Verificar que la columna primary key existe
-                if (!DB::getSchemaBuilder()->hasColumn($tabla, $primaryKey)) {
-                    Log::warning("Primary key no existe en tabla, omitiendo", [
-                        'tabla' => $tabla,
-                        'pk' => $primaryKey
-                    ]);
-                    continue;
-                }
-                
-                // Obtener registros con ID mayor al último sincronizado
-                $registros = DB::table($tabla)
-                    ->where($primaryKey, '>', $ultimo_id)
-                    ->orderBy($primaryKey, 'asc')
-                    ->limit(500) // Limitar por lotes
-                    ->get()
-                    ->toArray();
+        // Si no hay últimos IDs, no descargar nada (primera sincronización debe ser manual)
+        if (empty($ultimos_ids)) {
+            Log::warning("No se proporcionaron últimos IDs, no hay nada que descargar");
+            return [
+                'success' => true,
+                'nuevos_registros' => [],
+                'total_tablas' => 0,
+            ];
+        }
 
-                if (count($registros) > 0) {
-                    $nuevos_registros[$tabla] = array_map(function($registro) {
-                        return (array) $registro;
-                    }, $registros);
+        // Buscar cambios en sync_log que no han sido sincronizados
+        try {
+            $cambiosLog = DB::table('sync_log')
+                ->where('sede', $this->sede)
+                ->where('sincronizado', 0)
+                ->orderBy('fecha_cambio', 'asc')
+                ->limit(500)
+                ->get();
+
+            Log::info("Cambios encontrados en sync_log", [
+                'cantidad' => count($cambiosLog)
+            ]);
+
+            foreach ($cambiosLog as $log) {
+                $tabla = $log->tabla;
+                $operacion = $log->operacion;
+                $registroId = $log->registro_id;
+
+                // Obtener el registro completo si es INSERT o UPDATE
+                if (in_array($operacion, ['INSERT', 'UPDATE'])) {
+                    try {
+                        $primaryKey = $this->getPrimaryKeyForTable($tabla);
+                        
+                        $registro = DB::table($tabla)
+                            ->where($primaryKey, $registroId)
+                            ->first();
+
+                        if ($registro) {
+                            if (!isset($cambios[$tabla])) {
+                                $cambios[$tabla] = [];
+                            }
+                            
+                            $cambios[$tabla][] = [
+                                'operacion' => $operacion,
+                                'registro_id' => $registroId,
+                                'datos' => (array) $registro,
+                                'fecha_cambio' => $log->fecha_cambio,
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Error obteniendo registro", [
+                            'tabla' => $tabla,
+                            'registro_id' => $registroId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } elseif ($operacion === 'DELETE') {
+                    // Para DELETE solo enviar el ID
+                    if (!isset($cambios[$tabla])) {
+                        $cambios[$tabla] = [];
+                    }
                     
-                    Log::info("Registros encontrados", [
-                        'tabla' => $tabla,
-                        'cantidad' => count($registros)
-                    ]);
+                    $cambios[$tabla][] = [
+                        'operacion' => 'DELETE',
+                        'registro_id' => $registroId,
+                        'fecha_cambio' => $log->fecha_cambio,
+                    ];
                 }
-            } catch (\Exception $e) {
-                Log::error("Error procesando tabla para download", [
-                    'tabla' => $tabla,
-                    'error' => $e->getMessage()
-                ]);
-                // Continuar con la siguiente tabla sin detener todo
-                continue;
             }
+
+        } catch (\Exception $e) {
+            Log::error("Error consultando sync_log", [
+                'error' => $e->getMessage()
+            ]);
         }
 
         Log::info("Download completado", [
-            'total_tablas_con_cambios' => count($nuevos_registros)
+            'total_tablas_con_cambios' => count($cambios)
         ]);
 
         return [
             'success' => true,
+            'nuevos_registros' => $cambios,
+            'total_tablas' => count($cambios),
+        ];
+    }
             'nuevos_registros' => $nuevos_registros,
             'total_tablas' => count($nuevos_registros),
         ];

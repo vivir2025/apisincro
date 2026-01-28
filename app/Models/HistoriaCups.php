@@ -5,7 +5,7 @@ namespace App\Models;
 class HistoriaCups extends SyncModel
 {
     protected $table = 'historia_cups';
-    protected $primaryKey = 'idHistoriaCups';
+    protected $primaryKey = 'id_historia_cups';
     public $timestamps = false;
     
     protected $fillable = [

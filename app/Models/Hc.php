@@ -8,25 +8,8 @@ class Hc extends SyncModel
     protected $primaryKey = 'id_hc';
     public $timestamps = false;
     
-    protected $fillable = [
-        'paciente_id',
-        'fecha_consulta',
-        'medico_id',
-        'motivo_consulta',
-        'enfermedad_actual',
-        'antecedentes',
-        'examen_fisico',
-        'tension_arterial',
-        'frecuencia_cardiaca',
-        'temperatura',
-        'peso',
-        'talla',
-        'imc',
-        'analisis',
-        'plan_tratamiento',
-        'usuario_registro',
-        // Agregar más campos según tu BD
-    ];
+    // Permitir sincronización de todos los campos
+    protected $guarded = [];
 
     protected $casts = [
         'fecha_consulta' => 'datetime',

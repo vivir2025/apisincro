@@ -5,7 +5,7 @@ namespace App\Models;
 class HistoriaDiagnostico extends SyncModel
 {
     protected $table = 'historia_diagnostico';
-    protected $primaryKey = 'idHistoriaDiagnostico';
+    protected $primaryKey = 'id_historia_diagnostico';
     public $timestamps = false;
     
     protected $fillable = [

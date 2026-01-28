@@ -5,18 +5,11 @@ namespace App\Models;
 class HcComplementaria extends SyncModel
 {
     protected $table = 'hc_complementaria';
-    protected $primaryKey = 'idHcComplementaria';
+    protected $primaryKey = 'id_hc_complementaria';
     public $timestamps = false;
     
-    protected $fillable = [
-        'hc_id',
-        'antecedentes_familiares',
-        'antecedentes_personales',
-        'habitos',
-        'gineco_obstetricos',
-        'revision_sistemas',
-        // Agregar más campos según tu BD
-    ];
+    // Permitir asignación masiva de todos los campos para sincronización
+    protected $guarded = [];
 
     public function historiaClinica()
     {
