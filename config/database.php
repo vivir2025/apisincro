@@ -113,6 +113,49 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        // Conexiones personalizadas para las 3 sedes
+        'bd_morales' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST_MORALES', '127.0.0.1'),
+            'port' => env('DB_PORT_MORALES', '3306'),
+            'database' => env('DB_DATABASE_MORALES', 'nacerpar_morales'),
+            'username' => env('DB_USERNAME_MORALES', 'root'),
+            'password' => env('DB_PASSWORD_MORALES', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
+
+        'bd_cajibio' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST_CAJIBIO', '127.0.0.1'),
+            'port' => env('DB_PORT_CAJIBIO', '3306'),
+            'database' => env('DB_DATABASE_CAJIBIO', 'nacerpar_cajibio'),
+            'username' => env('DB_USERNAME_CAJIBIO', 'root'),
+            'password' => env('DB_PASSWORD_CAJIBIO', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
+
+        'bd_piendamo' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST_PIENDAMO', '127.0.0.1'),
+            'port' => env('DB_PORT_PIENDAMO', '3306'),
+            'database' => env('DB_DATABASE_PIENDAMO', 'nacerpar_piendamo'),
+            'username' => env('DB_USERNAME_PIENDAMO', 'root'),
+            'password' => env('DB_PASSWORD_PIENDAMO', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
+
     ],
 
     /*
