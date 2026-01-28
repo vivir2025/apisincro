@@ -97,17 +97,22 @@ class AuthController extends Controller
      */
     protected function verificarPassword($password, $hash)
     {
-        // Si usas MD5 (como muchos sistemas antiguos)
-        if (strlen($hash) === 32) {
+        // Si el hash está vacío, no permitir
+        if (empty($hash)) {
+            return false;
+        }
+
+        // Si usas MD5 (como muchos sistemas antiguos) - 32 caracteres hexadecimales
+        if (strlen($hash) === 32 && ctype_xdigit($hash)) {
             return md5($password) === $hash;
         }
         
-        // Si usas bcrypt
-        if (Hash::check($password, $hash)) {
-            return true;
+        // Si usas bcrypt (comienza con $2y$ o $2a$)
+        if (str_starts_with($hash, '$2y$') || str_starts_with($hash, '$2a$')) {
+            return Hash::check($password, $hash);
         }
         
-        // Si la contraseña está en texto plano (NO RECOMENDADO)
+        // Si la contraseña está en texto plano (NO RECOMENDADO pero común en sistemas legacy)
         return $password === $hash;
     }
 
