@@ -18,7 +18,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+# /vendor  # Descomentado para subir vendor al repo (hosting sin SSH)
 Homestead.json
 Homestead.yaml
 Thumbs.db
