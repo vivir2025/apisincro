@@ -75,8 +75,12 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Obtener ID del usuario (intentar diferentes nombres de campo)
+        $usuarioId = $usuarioDb->usuId ?? $usuarioDb->id ?? $usuarioDb->IdUsuario ?? $usuarioDb->usuario_id ?? null;
+        $usuarioNombre = $usuarioDb->usuNombre ?? $usuarioDb->nombre ?? $usuarioDb->Nombre ?? $usuarioDb->nombres ?? 'Usuario';
+
         // Generar token
-        $token = $this->generarToken($usuarioDb->usuId, $sede);
+        $token = $this->generarToken($usuarioId, $sede);
 
         return response()->json([
             'success' => true,
@@ -85,8 +89,8 @@ class AuthController extends Controller
             'expires_in' => 3600 * 24, // 24 horas
             'sede' => $sede,
             'usuario' => [
-                'id' => $usuarioDb->usuId,
-                'nombre' => $usuarioDb->usuNombre,
+                'id' => $usuarioId,
+                'nombre' => $usuarioNombre,
                 'usuario' => $usuarioDb->usuLogin,
             ],
         ]);
