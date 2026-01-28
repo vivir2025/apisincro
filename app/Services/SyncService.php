@@ -213,14 +213,36 @@ class SyncService
     protected function completarCamposFaltantes($tabla, $datos)
     {
         try {
-            // Obtener todas las columnas de la tabla
-            $columns = DB::getSchemaBuilder()->getColumnListing($tabla);
+            // Obtener información de columnas con sus tipos y restricciones
+            $columns = DB::select("SHOW COLUMNS FROM {$tabla}");
             
-            // Agregar NULL para campos que no vienen en los datos
             foreach ($columns as $column) {
-                if (!array_key_exists($column, $datos)) {
-                    // Usar NULL para todos los campos faltantes
-                    $datos[$column] = null;
+                $columnName = $column->Field;
+                
+                // Si el campo no existe en los datos, agregarlo
+                if (!array_key_exists($columnName, $datos)) {
+                    // Determinar valor por defecto según si permite NULL
+                    $allowsNull = strtoupper($column->Null) === 'YES';
+                    
+                    if ($allowsNull) {
+                        // Si permite NULL, usar NULL
+                        $datos[$columnName] = null;
+                    } else {
+                        // Si NO permite NULL, usar valor por defecto según el tipo
+                        $type = strtolower($column->Type);
+                        
+                        if (strpos($type, 'int') !== false || 
+                            strpos($type, 'decimal') !== false || 
+                            strpos($type, 'float') !== false || 
+                            strpos($type, 'double') !== false) {
+                            $datos[$columnName] = 0;
+                        } elseif (strpos($type, 'date') !== false || strpos($type, 'time') !== false) {
+                            $datos[$columnName] = null; // Intentar NULL de todos modos
+                        } else {
+                            // Para VARCHAR, TEXT, ENUM, etc.
+                            $datos[$columnName] = '';
+                        }
+                    }
                 }
             }
         } catch (\Exception $e) {
