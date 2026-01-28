@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 class SyncLog extends Model
 {
     protected $table = 'sync_log';
+    protected $primaryKey = 'd_sync_log';
     public $timestamps = false;
     
     protected $fillable = [
