@@ -92,11 +92,11 @@ class SyncController extends Controller
 
         $sede = $request->input('sede');
         $cambios = $request->input('cambios');
-syncService = new SyncService($sede);
-            $resultado = $
+
         try {
             // Subir cambios
-            $resultado = $this->syncService->upload($sede, $cambios);
+            $syncService = new SyncService($sede);
+            $resultado = $syncService->upload($sede, $cambios);
 
             return response()->json([
                 'success' => true,
@@ -143,9 +143,9 @@ syncService = new SyncService($sede);
         $desdeFecha = $request->input('desde_fecha', null);
 
         try {
-            /syncService = new SyncService($sede);
-            $cambios = $os
-            $cambios = $this->syncService->download($sede, $tablas, $desdeFecha);
+            // Descargar cambios
+            $syncService = new SyncService($sede);
+            $cambios = $syncService->download($sede, $tablas, $desdeFecha);
 
             return response()->json([
                 'success' => true,
@@ -169,9 +169,9 @@ syncService = new SyncService($sede);
      */
     public function status($sede)
     {
-        try {yncService = new SyncService($sede);
-            $status = $
-            $status = $this->syncService->getStatus($sede);
+        try {
+            $syncService = new SyncService($sede);
+            $status = $syncService->getStatus($sede);
 
             return response()->json([
                 'success' => true,
