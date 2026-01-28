@@ -173,13 +173,21 @@ class SyncController extends Controller
             // Descargar cambios
             $syncService = new SyncService($sede);
             $ultimosIds = is_array($tablas) ? array_fill_keys($tablas, 0) : [];
-            $cambios = $syncService->obtenerCambiosParaDownload($ultimosIds);
+            $resultado = $syncService->obtenerCambiosParaDownload($ultimosIds);
+
+            Log::info("Download procesado", [
+                'sede' => $sede,
+                'total_tablas_con_cambios' => $resultado['total_tablas'] ?? 0
+            ]);
 
             return response()->json([
                 'success' => true,
                 'sede' => $sede,
-                'total_cambios' => count($cambios),
-                'cambios' => $cambios,
+                'total_tablas_con_cambios' => $resultado['total_tablas'] ?? 0,
+                'nuevos_registros' => $resultado['nuevos_registros'] ?? [],
+                'message' => ($resultado['total_tablas'] ?? 0) > 0 
+                    ? 'Cambios disponibles para descargar' 
+                    : 'No hay cambios nuevos disponibles',
             ]);
         } catch (\Exception $e) {
             return response()->json([

@@ -205,15 +205,21 @@ class SyncService
     public function obtenerCambiosParaDownload(array $ultimos_ids)
     {
         $nuevos_registros = [];
-        $tablas = config('sync.tablas_sincronizadas');
+        $tablas = config('sync.tablas_sincronizadas', []);
+
+        Log::info("Iniciando obtenerCambiosParaDownload", [
+            'tablas_configuradas' => count($tablas),
+            'ultimos_ids' => $ultimos_ids
+        ]);
 
         foreach ($tablas as $tabla) {
             $ultimo_id = $ultimos_ids[$tabla] ?? 0;
+            $primaryKey = $this->getPrimaryKeyForTable($tabla);
             
             // Obtener registros con ID mayor al último sincronizado
             $registros = DB::table($tabla)
-                ->where('id', '>', $ultimo_id)
-                ->orderBy('id', 'asc')
+                ->where($primaryKey, '>', $ultimo_id)
+                ->orderBy($primaryKey, 'asc')
                 ->limit(500) // Limitar por lotes
                 ->get()
                 ->toArray();
@@ -222,8 +228,17 @@ class SyncService
                 $nuevos_registros[$tabla] = array_map(function($registro) {
                     return (array) $registro;
                 }, $registros);
+                
+                Log::info("Registros encontrados", [
+                    'tabla' => $tabla,
+                    'cantidad' => count($registros)
+                ]);
             }
         }
+
+        Log::info("Download completado", [
+            'total_tablas_con_cambios' => count($nuevos_registros)
+        ]);
 
         return [
             'success' => true,
