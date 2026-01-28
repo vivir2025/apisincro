@@ -120,6 +120,12 @@ class SyncService
                         ->update($datos);
                 } else {
                     Log::info("Insertando nuevo registro");
+                    
+                    // Agregar valores por defecto para campos que faltan (tabla hc)
+                    if ($tabla === 'hc' && !isset($datos['hcAdicional'])) {
+                        $datos['hcAdicional'] = '';
+                    }
+                    
                     DB::table($tabla)->insert($datos);
                 }
                 break;
@@ -144,6 +150,12 @@ class SyncService
                     if (!isset($datos[$primaryKey])) {
                         $datos[$primaryKey] = $registro_id;
                     }
+                    
+                    // Agregar valores por defecto para campos que faltan (tabla hc)
+                    if ($tabla === 'hc' && !isset($datos['hcAdicional'])) {
+                        $datos['hcAdicional'] = '';
+                    }
+                    
                     DB::table($tabla)->insert($datos);
                     Log::info("INSERT completado exitosamente");
                 }
@@ -185,10 +197,10 @@ class SyncService
             'historia' => 'idhistoria',
             'hc' => 'id_hc',
             'agenda' => 'idagenda',
-            'historia_cups' => 'id_historia_cups',
-            'historia_diagnostico' => 'id_historia_diagnostico',
-            'historia_medicamento' => 'id_historia_medicamento',
-            'historia_remision' => 'id_historia_remision',
+            'historia_cups' => 'id_his_cups',
+            'historia_diagnostico' => 'id_his_dia',
+            'historia_medicamento' => 'id_his_med',
+            'historia_remision' => 'id_his_rem',
             'hc_complementaria' => 'id_hc_complementaria',
             'empresa' => 'idEmpresa',
             'contrato' => 'idContrato',
