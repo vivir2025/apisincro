@@ -12,13 +12,6 @@ use App\Services\DatabaseSelector;
  */
 class SyncController extends Controller
 {
-    protected $syncService;
-
-    public function __construct(SyncService $syncService)
-    {
-        $this->syncService = $syncService;
-    }
-
     /**
      * Verificar actualizaciones disponibles
      * 
@@ -52,8 +45,11 @@ class SyncController extends Controller
             // Cambiar a la BD de la sede
             DatabaseSelector::setConnection($sede);
 
+            // Instanciar el servicio con la sede
+            $syncService = new SyncService($sede);
+
             // Verificar actualizaciones
-            $updates = $this->syncService->checkUpdates($sede, $tabla, $ultimoId);
+            $updates = $syncService->checkUpdates($sede, $tabla, $ultimoId);
 
             return response()->json([
                 'success' => true,
@@ -96,7 +92,8 @@ class SyncController extends Controller
 
         $sede = $request->input('sede');
         $cambios = $request->input('cambios');
-
+syncService = new SyncService($sede);
+            $resultado = $
         try {
             // Subir cambios
             $resultado = $this->syncService->upload($sede, $cambios);
@@ -146,7 +143,8 @@ class SyncController extends Controller
         $desdeFecha = $request->input('desde_fecha', null);
 
         try {
-            // Descargar cambios
+            /syncService = new SyncService($sede);
+            $cambios = $os
             $cambios = $this->syncService->download($sede, $tablas, $desdeFecha);
 
             return response()->json([
@@ -171,7 +169,8 @@ class SyncController extends Controller
      */
     public function status($sede)
     {
-        try {
+        try {yncService = new SyncService($sede);
+            $status = $
             $status = $this->syncService->getStatus($sede);
 
             return response()->json([
