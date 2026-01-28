@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use App\Services\SyncService;
 use App\Services\DatabaseSelector;
 
@@ -78,12 +79,17 @@ class SyncController extends Controller
      */
     public function upload(Request $request)
     {
+        Log::info("=== SYNC UPLOAD INICIADO ===", [
+            'request_data' => $request->all()
+        ]);
+
         $validator = Validator::make($request->all(), [
             'sede' => 'required|string',
             'cambios' => 'required|array',
         ]);
 
         if ($validator->fails()) {
+            Log::error("Validación fallida", ['errors' => $validator->errors()]);
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors(),
@@ -93,10 +99,22 @@ class SyncController extends Controller
         $sede = $request->input('sede');
         $cambios = $request->input('cambios');
 
+        Log::info("Iniciando procesamiento", [
+            'sede' => $sede,
+            'total_cambios' => count($cambios)
+        ]);
+
         try {
             // Subir cambios
             $syncService = new SyncService($sede);
+            
+            Log::info("SyncService creado, procesando upload...");
             $resultado = $syncService->procesarUpload($cambios);
+
+            Log::info("Upload completado", [
+                'procesados' => $resultado['procesados'],
+                'errores' => count($resultado['errores'])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -105,10 +123,19 @@ class SyncController extends Controller
                 'errores' => $resultado['errores'],
             ]);
         } catch (\Exception $e) {
+            Log::error("ERROR en upload", [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al subir cambios',
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ], 500);
         }
     }

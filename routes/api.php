@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SyncController;
+use App\Http\Controllers\DebugController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,12 @@ Route::middleware(['validar.sede'])->prefix('sync')->group(function () {
     
     // Endpoint de prueba
     Route::post('/test', [SyncController::class, 'test']);
+});
+
+// Rutas de debug (sin middleware para diagnóstico)
+Route::prefix('debug')->group(function () {
+    Route::post('/test-sync', [DebugController::class, 'testSync']);
+    Route::get('/logs', [DebugController::class, 'getLogs']);
 });
 
 // Ruta de bienvenida
