@@ -121,10 +121,8 @@ class SyncService
                 } else {
                     Log::info("Insertando nuevo registro");
                     
-                    // Agregar valores por defecto para campos que faltan (tabla hc)
-                    if ($tabla === 'hc' && !isset($datos['hcAdicional'])) {
-                        $datos['hcAdicional'] = '';
-                    }
+                    // Completar campos faltantes con valores por defecto
+                    $datos = $this->completarCamposFaltantes($tabla, $datos);
                     
                     DB::table($tabla)->insert($datos);
                 }
@@ -151,10 +149,8 @@ class SyncService
                         $datos[$primaryKey] = $registro_id;
                     }
                     
-                    // Agregar valores por defecto para campos que faltan (tabla hc)
-                    if ($tabla === 'hc' && !isset($datos['hcAdicional'])) {
-                        $datos['hcAdicional'] = '';
-                    }
+                    // Completar campos faltantes con valores por defecto
+                    $datos = $this->completarCamposFaltantes($tabla, $datos);
                     
                     DB::table($tabla)->insert($datos);
                     Log::info("INSERT completado exitosamente");
@@ -209,6 +205,38 @@ class SyncService
         ];
 
         return $primaryKeys[$tabla] ?? 'id';
+    }
+
+    /**
+     * Completar campos faltantes con valores por defecto para evitar errores de NOT NULL
+     */
+    protected function completarCamposFaltantes($tabla, $datos)
+    {
+        try {
+            // Obtener todas las columnas de la tabla
+            $columns = DB::getSchemaBuilder()->getColumnListing($tabla);
+            
+            // Agregar valores por defecto para campos que no vienen en los datos
+            foreach ($columns as $column) {
+                if (!array_key_exists($column, $datos)) {
+                    // Valor por defecto según el nombre del campo
+                    if (strpos($column, 'fecha') !== false || strpos($column, 'Fecha') !== false) {
+                        $datos[$column] = null; // Fechas NULL
+                    } elseif (strpos($column, 'id') !== false || strpos($column, 'Id') !== false || strpos($column, '_id') !== false) {
+                        $datos[$column] = null; // IDs NULL
+                    } else {
+                        $datos[$column] = ''; // Strings vacíos
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("No se pudieron completar campos faltantes", [
+                'tabla' => $tabla,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $datos;
     }
 
     /**
