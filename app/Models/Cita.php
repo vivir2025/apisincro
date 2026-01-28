@@ -5,6 +5,7 @@ namespace App\Models;
 class Cita extends SyncModel
 {
     protected $table = 'cita';
+    protected $primaryKey = 'idcita';
     public $timestamps = false;
     
     protected $fillable = [

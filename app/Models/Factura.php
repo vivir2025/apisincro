@@ -5,6 +5,7 @@ namespace App\Models;
 class Factura extends SyncModel
 {
     protected $table = 'factura';
+    protected $primaryKey = 'idFactura';
     public $timestamps = false;
     
     protected $fillable = [

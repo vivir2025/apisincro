@@ -5,6 +5,7 @@ namespace App\Models;
 class Hc extends SyncModel
 {
     protected $table = 'hc';
+    protected $primaryKey = 'idhistoria';
     public $timestamps = false;
     
     protected $fillable = [

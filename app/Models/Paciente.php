@@ -5,6 +5,7 @@ namespace App\Models;
 class Paciente extends SyncModel
 {
     protected $table = 'paciente';
+    protected $primaryKey = 'idPaciente';
     public $timestamps = false;
     
     protected $fillable = [

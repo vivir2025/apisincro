@@ -5,6 +5,7 @@ namespace App\Models;
 class Agenda extends SyncModel
 {
     protected $table = 'agenda';
+    protected $primaryKey = 'idagenda';
     public $timestamps = false;
     
     protected $fillable = [
