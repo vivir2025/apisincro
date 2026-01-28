@@ -183,7 +183,7 @@ class SyncService
             'cita' => 'idcita',
             'factura' => 'idFactura',
             'historia' => 'idhistoria',
-            'hc' => 'idhistoria',
+            'hc' => 'id_hc',
             'agenda' => 'idagenda',
             'historia_cups' => 'idHistoriaCups',
             'historia_diagnostico' => 'idHistoriaDiagnostico',
@@ -213,26 +213,51 @@ class SyncService
         ]);
 
         foreach ($tablas as $tabla) {
-            $ultimo_id = $ultimos_ids[$tabla] ?? 0;
-            $primaryKey = $this->getPrimaryKeyForTable($tabla);
-            
-            // Obtener registros con ID mayor al último sincronizado
-            $registros = DB::table($tabla)
-                ->where($primaryKey, '>', $ultimo_id)
-                ->orderBy($primaryKey, 'asc')
-                ->limit(500) // Limitar por lotes
-                ->get()
-                ->toArray();
-
-            if (count($registros) > 0) {
-                $nuevos_registros[$tabla] = array_map(function($registro) {
-                    return (array) $registro;
-                }, $registros);
+            try {
+                $ultimo_id = $ultimos_ids[$tabla] ?? 0;
+                $primaryKey = $this->getPrimaryKeyForTable($tabla);
                 
-                Log::info("Registros encontrados", [
+                // Verificar que la tabla existe
+                $tableExists = DB::getSchemaBuilder()->hasTable($tabla);
+                if (!$tableExists) {
+                    Log::warning("Tabla no existe, omitiendo", ['tabla' => $tabla]);
+                    continue;
+                }
+                
+                // Verificar que la columna primary key existe
+                if (!DB::getSchemaBuilder()->hasColumn($tabla, $primaryKey)) {
+                    Log::warning("Primary key no existe en tabla, omitiendo", [
+                        'tabla' => $tabla,
+                        'pk' => $primaryKey
+                    ]);
+                    continue;
+                }
+                
+                // Obtener registros con ID mayor al último sincronizado
+                $registros = DB::table($tabla)
+                    ->where($primaryKey, '>', $ultimo_id)
+                    ->orderBy($primaryKey, 'asc')
+                    ->limit(500) // Limitar por lotes
+                    ->get()
+                    ->toArray();
+
+                if (count($registros) > 0) {
+                    $nuevos_registros[$tabla] = array_map(function($registro) {
+                        return (array) $registro;
+                    }, $registros);
+                    
+                    Log::info("Registros encontrados", [
+                        'tabla' => $tabla,
+                        'cantidad' => count($registros)
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error("Error procesando tabla para download", [
                     'tabla' => $tabla,
-                    'cantidad' => count($registros)
+                    'error' => $e->getMessage()
                 ]);
+                // Continuar con la siguiente tabla sin detener todo
+                continue;
             }
         }
 
