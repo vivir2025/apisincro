@@ -216,17 +216,11 @@ class SyncService
             // Obtener todas las columnas de la tabla
             $columns = DB::getSchemaBuilder()->getColumnListing($tabla);
             
-            // Agregar valores por defecto para campos que no vienen en los datos
+            // Agregar NULL para campos que no vienen en los datos
             foreach ($columns as $column) {
                 if (!array_key_exists($column, $datos)) {
-                    // Valor por defecto según el nombre del campo
-                    if (strpos($column, 'fecha') !== false || strpos($column, 'Fecha') !== false) {
-                        $datos[$column] = null; // Fechas NULL
-                    } elseif (strpos($column, 'id') !== false || strpos($column, 'Id') !== false || strpos($column, '_id') !== false) {
-                        $datos[$column] = null; // IDs NULL
-                    } else {
-                        $datos[$column] = ''; // Strings vacíos
-                    }
+                    // Usar NULL para todos los campos faltantes
+                    $datos[$column] = null;
                 }
             }
         } catch (\Exception $e) {
