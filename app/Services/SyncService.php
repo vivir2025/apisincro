@@ -62,6 +62,7 @@ class SyncService
 
             return [
                 'success' => true,
+                'procesados' => $sincronizados,
                 'sincronizados' => $sincronizados,
                 'errores' => $errores,
                 'total_cambios' => count($cambios),
@@ -84,6 +85,12 @@ class SyncService
      */
     protected function aplicarCambio(array $cambio)
     {
+        Log::info("Aplicando cambio", [
+            'tabla' => $cambio['tabla'] ?? 'sin_tabla',
+            'operacion' => $cambio['operacion'] ?? 'sin_operacion',
+            'registro_id' => $cambio['registro_id'] ?? null
+        ]);
+
         $tabla = $cambio['tabla'];
         $operacion = $cambio['operacion'];
         $datos = $cambio['datos'];
@@ -91,23 +98,28 @@ class SyncService
 
         // Validar que la tabla esté en la lista de tablas sincronizadas
         if (!in_array($tabla, config('sync.tablas_sincronizadas'))) {
+            Log::error("Tabla no configurada para sincronización", ['tabla' => $tabla]);
             throw new \Exception("Tabla '{$tabla}' no está configurada para sincronización");
         }
 
         // Obtener la clave primaria de la tabla
         $primaryKey = $this->getPrimaryKeyForTable($tabla);
+        Log::info("Primary key obtenida", ['tabla' => $tabla, 'pk' => $primaryKey]);
 
         switch ($operacion) {
             case 'INSERT':
+                Log::info("Ejecutando INSERT", ['tabla' => $tabla]);
                 // Verificar si ya existe el registro
                 $existe = DB::table($tabla)->where($primaryKey, $datos[$primaryKey] ?? $registro_id)->exists();
                 
                 if ($existe) {
+                    Log::info("Registro ya existe, actualizando", ['id' => $datos[$primaryKey] ?? $registro_id]);
                     // Si existe, actualizar en lugar de insertar
                     DB::table($tabla)
                         ->where($primaryKey, $datos[$primaryKey] ?? $registro_id)
                         ->update($datos);
                 } else {
+                    Log::info("Insertando nuevo registro");
                     DB::table($tabla)->insert($datos);
                 }
                 break;
@@ -117,9 +129,11 @@ class SyncService
                     throw new \Exception("registro_id requerido para operación UPDATE");
                 }
                 
-                DB::table($tabla)
+                Log::info("Ejecutando UPDATE", ['tabla' => $tabla, 'id' => $registro_id]);
+                $affected = DB::table($tabla)
                     ->where($primaryKey, $registro_id)
                     ->update($datos);
+                Log::info("UPDATE completado", ['affected_rows' => $affected]);
                 break;
 
             case 'DELETE':
@@ -127,6 +141,7 @@ class SyncService
                     throw new \Exception("registro_id requerido para operación DELETE");
                 }
                 
+                Log::info("Ejecutando DELETE", ['tabla' => $tabla, 'id' => $registro_id]);
                 DB::table($tabla)
                     ->where($primaryKey, $registro_id)
                     ->delete();
