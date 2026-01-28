@@ -221,11 +221,15 @@ class SyncService
                 
                 // Si el campo no existe en los datos, agregarlo
                 if (!array_key_exists($columnName, $datos)) {
-                    // Si tiene default value, no agregarlo (MySQL lo pondrá automáticamente)
+                    // Si es auto_increment, saltar
+                    if (stripos($column->Extra, 'auto_increment') !== false) {
+                        continue;
+                    }
+                    
+                    // Si tiene default value explícito o current_timestamp, saltar
                     if ($column->Default !== null || 
-                        stripos($column->Default, 'current_timestamp') !== false ||
-                        stripos($column->Extra, 'auto_increment') !== false) {
-                        continue; // No agregar, MySQL usará el default
+                        ($column->Default !== 'NULL' && stripos((string)$column->Default, 'current_timestamp') !== false)) {
+                        continue;
                     }
                     
                     // Determinar valor por defecto según si permite NULL
