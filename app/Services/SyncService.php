@@ -297,10 +297,6 @@ class SyncService
             'total_tablas' => count($cambios),
         ];
     }
-            'nuevos_registros' => $nuevos_registros,
-            'total_tablas' => count($nuevos_registros),
-        ];
-    }
 
     /**
      * Verificar si hay actualizaciones disponibles
