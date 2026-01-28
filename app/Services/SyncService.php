@@ -94,15 +94,18 @@ class SyncService
             throw new \Exception("Tabla '{$tabla}' no está configurada para sincronización");
         }
 
+        // Obtener la clave primaria de la tabla
+        $primaryKey = $this->getPrimaryKeyForTable($tabla);
+
         switch ($operacion) {
             case 'INSERT':
                 // Verificar si ya existe el registro
-                $existe = DB::table($tabla)->where('id', $datos['id'] ?? $registro_id)->exists();
+                $existe = DB::table($tabla)->where($primaryKey, $datos[$primaryKey] ?? $registro_id)->exists();
                 
                 if ($existe) {
                     // Si existe, actualizar en lugar de insertar
                     DB::table($tabla)
-                        ->where('id', $datos['id'] ?? $registro_id)
+                        ->where($primaryKey, $datos[$primaryKey] ?? $registro_id)
                         ->update($datos);
                 } else {
                     DB::table($tabla)->insert($datos);
@@ -115,7 +118,7 @@ class SyncService
                 }
                 
                 DB::table($tabla)
-                    ->where('id', $registro_id)
+                    ->where($primaryKey, $registro_id)
                     ->update($datos);
                 break;
 
@@ -125,7 +128,7 @@ class SyncService
                 }
                 
                 DB::table($tabla)
-                    ->where('id', $registro_id)
+                    ->where($primaryKey, $registro_id)
                     ->delete();
                 break;
 
@@ -140,6 +143,32 @@ class SyncService
                 SyncControl::actualizarUltimoId($tabla, $registro_id, $this->sede);
             }
         }
+    }
+
+    /**
+     * Obtener la clave primaria de una tabla
+     */
+    protected function getPrimaryKeyForTable($tabla)
+    {
+        $primaryKeys = [
+            'paciente' => 'idPaciente',
+            'cita' => 'idcita',
+            'factura' => 'idFactura',
+            'historia' => 'idhistoria',
+            'hc' => 'idhistoria',
+            'agenda' => 'idagenda',
+            'historia_cups' => 'idHistoriaCups',
+            'historia_diagnostico' => 'idHistoriaDiagnostico',
+            'historia_medicamento' => 'idHistoriaMedicamento',
+            'historia_remision' => 'idHistoriaRemision',
+            'hc_complementaria' => 'idHcComplementaria',
+            'empresa' => 'idEmpresa',
+            'contrato' => 'idContrato',
+            'cups' => 'idCups',
+            'usuario' => 'idUsuario',
+        ];
+
+        return $primaryKeys[$tabla] ?? 'id';
     }
 
     /**
