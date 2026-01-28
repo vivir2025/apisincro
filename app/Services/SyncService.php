@@ -221,6 +221,13 @@ class SyncService
                 
                 // Si el campo no existe en los datos, agregarlo
                 if (!array_key_exists($columnName, $datos)) {
+                    // Si tiene default value, no agregarlo (MySQL lo pondrá automáticamente)
+                    if ($column->Default !== null || 
+                        stripos($column->Default, 'current_timestamp') !== false ||
+                        stripos($column->Extra, 'auto_increment') !== false) {
+                        continue; // No agregar, MySQL usará el default
+                    }
+                    
                     // Determinar valor por defecto según si permite NULL
                     $allowsNull = strtoupper($column->Null) === 'YES';
                     
@@ -228,7 +235,7 @@ class SyncService
                         // Si permite NULL, usar NULL
                         $datos[$columnName] = null;
                     } else {
-                        // Si NO permite NULL, usar valor por defecto según el tipo
+                        // Si NO permite NULL y NO tiene default, usar valor por defecto según el tipo
                         $type = strtolower($column->Type);
                         
                         if (strpos($type, 'int') !== false || 
@@ -236,10 +243,8 @@ class SyncService
                             strpos($type, 'float') !== false || 
                             strpos($type, 'double') !== false) {
                             $datos[$columnName] = 0;
-                        } elseif (strpos($type, 'date') !== false || strpos($type, 'time') !== false) {
-                            $datos[$columnName] = null; // Intentar NULL de todos modos
                         } else {
-                            // Para VARCHAR, TEXT, ENUM, etc.
+                            // Para VARCHAR, TEXT, CHAR, ENUM, etc. → string vacío
                             $datos[$columnName] = '';
                         }
                     }
