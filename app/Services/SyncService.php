@@ -47,14 +47,11 @@ class SyncService
                     $errores[] = [
                         'tabla' => $cambio['tabla'] ?? 'desconocida',
                         'registro_id' => $cambio['registro_id'] ?? 'desconocido',
+                        'operacion' => $cambio['operacion'] ?? 'desconocida',
                         'error' => $e->getMessage(),
                     ];
                     
-                    Log::error("Error sincronizando registro", [
-                        'sede' => $this->sede,
-                        'cambio' => $cambio,
-                        'error' => $e->getMessage(),
-                    ]);
+                    Log::warning("[SYNC] Error en {$cambio['tabla']} ID:{$cambio['registro_id']} - {$e->getMessage()}");
                 }
             }
 
@@ -71,10 +68,7 @@ class SyncService
         } catch (\Exception $e) {
             DB::rollBack();
             
-            Log::error("Error en transacción de sincronización", [
-                'sede' => $this->sede,
-                'error' => $e->getMessage(),
-            ]);
+            Log::error("[SYNC] Error en transacción | Sede: {$this->sede} | {$e->getMessage()}");
 
             throw $e;
         }
@@ -85,12 +79,6 @@ class SyncService
      */
     protected function aplicarCambio(array $cambio)
     {
-        Log::info("Aplicando cambio", [
-            'tabla' => $cambio['tabla'] ?? 'sin_tabla',
-            'operacion' => $cambio['operacion'] ?? 'sin_operacion',
-            'registro_id' => $cambio['registro_id'] ?? null
-        ]);
-
         $tabla = $cambio['tabla'];
         $operacion = $cambio['operacion'];
         $datos = $cambio['datos'];
@@ -98,32 +86,25 @@ class SyncService
 
         // Validar que la tabla esté en la lista de tablas sincronizadas
         if (!in_array($tabla, config('sync.tablas_sincronizadas'))) {
-            Log::error("Tabla no configurada para sincronización", ['tabla' => $tabla]);
             throw new \Exception("Tabla '{$tabla}' no está configurada para sincronización");
         }
 
         // Obtener la clave primaria de la tabla
         $primaryKey = $this->getPrimaryKeyForTable($tabla);
-        Log::info("Primary key obtenida", ['tabla' => $tabla, 'pk' => $primaryKey]);
 
         switch ($operacion) {
             case 'INSERT':
-                Log::info("Ejecutando INSERT", ['tabla' => $tabla]);
                 // Verificar si ya existe el registro
                 $existe = DB::table($tabla)->where($primaryKey, $datos[$primaryKey] ?? $registro_id)->exists();
                 
                 if ($existe) {
-                    Log::info("Registro ya existe, actualizando", ['id' => $datos[$primaryKey] ?? $registro_id]);
                     // Si existe, actualizar en lugar de insertar
                     DB::table($tabla)
                         ->where($primaryKey, $datos[$primaryKey] ?? $registro_id)
                         ->update($datos);
                 } else {
-                    Log::info("Insertando nuevo registro");
-                    
                     // Completar campos faltantes con valores por defecto
                     $datos = $this->completarCamposFaltantes($tabla, $datos);
-                    
                     DB::table($tabla)->insert($datos);
                 }
                 break;
@@ -137,17 +118,13 @@ class SyncService
                 $existe = DB::table($tabla)->where($primaryKey, $registro_id)->exists();
                 
                 if ($existe) {
-                    Log::info("Ejecutando UPDATE - registro existe", ['tabla' => $tabla, 'id' => $registro_id]);
-                    
                     // Completar campos faltantes con valores por defecto para evitar errores de NOT NULL en UPDATE
                     $datos = $this->completarCamposFaltantes($tabla, $datos);
                     
-                    $affected = DB::table($tabla)
+                    DB::table($tabla)
                         ->where($primaryKey, $registro_id)
                         ->update($datos);
-                    Log::info("UPDATE completado", ['affected_rows' => $affected]);
                 } else {
-                    Log::info("Registro no existe, ejecutando INSERT en su lugar", ['tabla' => $tabla, 'id' => $registro_id]);
                     // Asegurar que el ID esté en los datos
                     if (!isset($datos[$primaryKey])) {
                         $datos[$primaryKey] = $registro_id;
@@ -157,7 +134,6 @@ class SyncService
                     $datos = $this->completarCamposFaltantes($tabla, $datos);
                     
                     DB::table($tabla)->insert($datos);
-                    Log::info("INSERT completado exitosamente");
                 }
                 break;
 
@@ -166,7 +142,6 @@ class SyncService
                     throw new \Exception("registro_id requerido para operación DELETE");
                 }
                 
-                Log::info("Ejecutando DELETE", ['tabla' => $tabla, 'id' => $registro_id]);
                 DB::table($tabla)
                     ->where($primaryKey, $registro_id)
                     ->delete();
@@ -261,10 +236,7 @@ class SyncService
                 }
             }
         } catch (\Exception $e) {
-            Log::warning("No se pudieron completar campos faltantes", [
-                'tabla' => $tabla,
-                'error' => $e->getMessage()
-            ]);
+            Log::warning("[SYNC] No se pudieron completar campos faltantes en {$tabla}");
         }
         
         return $datos;
@@ -278,13 +250,8 @@ class SyncService
     {
         $cambios = [];
 
-        Log::info("Iniciando obtenerCambiosParaDownload", [
-            'ultimos_ids' => $ultimos_ids
-        ]);
-
         // Si no hay últimos IDs, no descargar nada (primera sincronización debe ser manual)
         if (empty($ultimos_ids)) {
-            Log::warning("No se proporcionaron últimos IDs, no hay nada que descargar");
             return [
                 'success' => true,
                 'nuevos_registros' => [],
@@ -300,10 +267,6 @@ class SyncService
                 ->orderBy('fecha_cambio', 'asc')
                 ->limit(500)
                 ->get();
-
-            Log::info("Cambios encontrados en sync_log", [
-                'cantidad' => count($cambiosLog)
-            ]);
 
             foreach ($cambiosLog as $log) {
                 $tabla = $log->tabla;
@@ -353,14 +316,8 @@ class SyncService
             }
 
         } catch (\Exception $e) {
-            Log::error("Error consultando sync_log", [
-                'error' => $e->getMessage()
-            ]);
+            Log::error("[SYNC DOWNLOAD] Error consultando sync_log | {$e->getMessage()}");
         }
-
-        Log::info("Download completado", [
-            'total_tablas_con_cambios' => count($cambios)
-        ]);
 
         return [
             'success' => true,

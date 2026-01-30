@@ -79,17 +79,13 @@ class SyncController extends Controller
      */
     public function upload(Request $request)
     {
-        Log::info("=== SYNC UPLOAD INICIADO ===", [
-            'request_data' => $request->all()
-        ]);
-
         $validator = Validator::make($request->all(), [
             'sede' => 'required|string',
             'cambios' => 'required|array',
         ]);
 
         if ($validator->fails()) {
-            Log::error("Validación fallida", ['errors' => $validator->errors()]);
+            Log::error("[SYNC UPLOAD] Validación fallida", ['errors' => $validator->errors()]);
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors(),
@@ -99,22 +95,21 @@ class SyncController extends Controller
         $sede = $request->input('sede');
         $cambios = $request->input('cambios');
 
-        Log::info("Iniciando procesamiento", [
-            'sede' => $sede,
-            'total_cambios' => count($cambios)
-        ]);
+        Log::info("[SYNC UPLOAD] Sede: {$sede} | Cambios: " . count($cambios));
 
         try {
             // Subir cambios
             $syncService = new SyncService($sede);
-            
-            Log::info("SyncService creado, procesando upload...");
             $resultado = $syncService->procesarUpload($cambios);
 
-            Log::info("Upload completado", [
-                'procesados' => $resultado['procesados'],
-                'errores' => count($resultado['errores'])
-            ]);
+            $erroresCount = count($resultado['errores']);
+            $status = $erroresCount > 0 ? 'CON ERRORES' : 'EXITOSO';
+            
+            Log::info("[SYNC UPLOAD] {$status} | Sede: {$sede} | Procesados: {$resultado['procesados']} | Errores: {$erroresCount}");
+            
+            if ($erroresCount > 0) {
+                Log::warning("[SYNC UPLOAD] Detalles de errores:", ['errores' => $resultado['errores']]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -123,12 +118,7 @@ class SyncController extends Controller
                 'errores' => $resultado['errores'],
             ]);
         } catch (\Exception $e) {
-            Log::error("ERROR en upload", [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error("[SYNC UPLOAD] ERROR | Sede: {$sede} | {$e->getMessage()} | Archivo: {$e->getFile()}:{$e->getLine()}");
 
             return response()->json([
                 'success' => false,
@@ -175,10 +165,8 @@ class SyncController extends Controller
             $ultimosIds = is_array($tablas) ? array_fill_keys($tablas, 0) : [];
             $resultado = $syncService->obtenerCambiosParaDownload($ultimosIds);
 
-            Log::info("Download procesado", [
-                'sede' => $sede,
-                'total_tablas_con_cambios' => $resultado['total_tablas'] ?? 0
-            ]);
+            $totalTablas = $resultado['total_tablas'] ?? 0;
+            Log::info("[SYNC DOWNLOAD] Sede: {$sede} | Tablas con cambios: {$totalTablas}");
 
             return response()->json([
                 'success' => true,
