@@ -219,27 +219,29 @@ class SyncService
             foreach ($columns as $column) {
                 $columnName = $column->Field;
                 
-                // Si el campo no existe en los datos, agregarlo
-                if (!array_key_exists($columnName, $datos)) {
-                    // Si es auto_increment, saltar
-                    if (stripos($column->Extra, 'auto_increment') !== false) {
-                        continue;
-                    }
-                    
-                    // Si tiene default value explícito o current_timestamp, saltar
-                    if ($column->Default !== null || 
-                        ($column->Default !== 'NULL' && stripos((string)$column->Default, 'current_timestamp') !== false)) {
-                        continue;
-                    }
-                    
-                    // Determinar valor por defecto según si permite NULL
-                    $allowsNull = strtoupper($column->Null) === 'YES';
+                // Si es auto_increment, saltar
+                if (stripos($column->Extra, 'auto_increment') !== false) {
+                    continue;
+                }
+                
+                // Si tiene default value explícito o current_timestamp, saltar
+                if ($column->Default !== null || 
+                    ($column->Default !== 'NULL' && stripos((string)$column->Default, 'current_timestamp') !== false)) {
+                    continue;
+                }
+                
+                // Determinar si permite NULL
+                $allowsNull = strtoupper($column->Null) === 'YES';
+                
+                // Si el campo no existe en los datos O existe pero es null y la columna NO permite NULL
+                if (!array_key_exists($columnName, $datos) || 
+                    (!$allowsNull && $datos[$columnName] === null)) {
                     
                     if ($allowsNull) {
                         // Si permite NULL, usar NULL
                         $datos[$columnName] = null;
                     } else {
-                        // Si NO permite NULL y NO tiene default, usar valor por defecto según el tipo
+                        // Si NO permite NULL, usar valor por defecto según el tipo
                         $type = strtolower($column->Type);
                         
                         if (strpos($type, 'int') !== false || 
