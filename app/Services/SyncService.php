@@ -138,6 +138,10 @@ class SyncService
                 
                 if ($existe) {
                     Log::info("Ejecutando UPDATE - registro existe", ['tabla' => $tabla, 'id' => $registro_id]);
+                    
+                    // Completar campos faltantes con valores por defecto para evitar errores de NOT NULL en UPDATE
+                    $datos = $this->completarCamposFaltantes($tabla, $datos);
+                    
                     $affected = DB::table($tabla)
                         ->where($primaryKey, $registro_id)
                         ->update($datos);
